@@ -1,0 +1,60 @@
+from generate_test import GenerateTest
+import random
+
+class TICHTestGenerator(GenerateTest):
+    def get_argument_parser(self):
+        parser = super().get_argument_parser()
+        parser.add_argument("--min_n", type=int, default=2, help="Min n")
+        parser.add_argument("--max_n", type=int, default=2500, help="Max n for <1MB, brute force")
+        parser.add_argument("--min_val", type=int, default=1, help="Min value for a, b")
+        parser.add_argument("--max_val", type=int, default=100000, help="Max value for a, b")
+        return parser
+
+    def generate_inputs(self, params):
+        test_cases = []
+
+        # 1. Nhỏ nhất
+        test_cases.append("2\n1 2\n3 4")
+
+        # 2. Toàn 1
+        n = 4
+        test_cases.append(f"{n}\n{' '.join(['1']*n)}\n{' '.join(['1']*n)}")
+
+        # 3. Dãy tăng dần
+        n = 5
+        test_cases.append(f"{n}\n{' '.join(str(x) for x in range(1, n+1))}\n{' '.join(str(x) for x in range(1, n+1))}")
+
+        # 4. Dãy giảm dần
+        n = 5
+        test_cases.append(f"{n}\n{' '.join(str(x) for x in range(n, 0, -1))}\n{' '.join(str(x) for x in range(n, 0, -1))}")
+
+        # 5. Dãy xen kẽ max/min
+        n = 6
+        a = [1, 100000]*3
+        b = [100000, 1]*3
+        test_cases.append(f"{n}\n{' '.join(map(str, a))}\n{' '.join(map(str, b))}")
+
+        # 6. Test mẫu đề
+        test_cases.append("4\n9 7 1 4\n1 4 6 5")
+
+        # 7. Dãy ngẫu nhiên nhỏ (brute force)
+        n = 20
+        a = [random.randint(1, 100) for _ in range(n)]
+        b = [random.randint(1, 100) for _ in range(n)]
+        test_cases.append(f"{n}\n{' '.join(map(str, a))}\n{' '.join(map(str, b))}")
+
+        # 8. Dãy ngẫu nhiên lớn nhất dưới 1MB
+        n = min(getattr(params,"max_n",2500), 2500)
+        a = [random.randint(getattr(params,"min_val",1), getattr(params,"max_val",100000)) for _ in range(n)]
+        b = [random.randint(getattr(params,"min_val",1), getattr(params,"max_val",100000)) for _ in range(n)]
+        test_cases.append(f"{n}\n{' '.join(map(str, a))}\n{' '.join(map(str, b))}")
+
+        # 9. Dãy toàn max
+        n = 10
+        test_cases.append(f"{n}\n{' '.join(['100000']*n)}\n{' '.join(['100000']*n)}")
+
+        # 10. Dãy toàn min
+        n = 10
+        test_cases.append(f"{n}\n{' '.join(['1']*n)}\n{' '.join(['1']*n)}")
+
+        return test_cases

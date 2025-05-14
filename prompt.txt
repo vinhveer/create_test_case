@@ -1,0 +1,79 @@
+Ta có đề bài dưới đây, bạn hãy đọc yêu cầu và thực hiện đúng các tác vụ tôi đã trình bày nhé.
+1. Viết thuật trâu (Yêu cầu độ chính xác cao, không cần nhanh)
+- Ngôn ngữ: C++
+- Input/Output: Standard Input (stdin) và Standard Output (stdout).
+- Ưu tiên: Độ chính xác tuyệt đối của thuật toán là yếu tố quan trọng nhất. Hiệu suất (tốc độ thực thi) không phải là ưu tiên hàng đầu cho giải pháp này.
+- Mục tiêu: Đảm bảo thuật toán đưa ra kết quả đúng đắn cho mọi trường hợp đầu vào hợp lệ theo yêu cầu của đề bài.
+2. Dựa vào class dưới đây, viết lại class sinh test, theo yêu cầu tôi trình bày dưới đây:
+Điều kiện tiên quyết là phải đúng yêu cầu đề bài, và đúng luôn với phần Ràng buộc nếu đề bài có tồn tại phần này.
+Yêu cầu về test case:
+- Tính đúng đắn: Tất cả các test case được sinh ra phải tuân thủ chặt chẽ các ràng buộc và yêu cầu của đề bài.
+- Tính bao quát (Coverage): Bộ test cần bao phủ một cách toàn diện các trường hợp có thể xảy ra, bao gồm:
+- Trường hợp biên (Edge cases): Giá trị nhỏ nhất, lớn nhất, giới hạn của các biến đầu vào.
+- Trường hợp đặc biệt: Các giá trị gây ra xử lý đặc biệt trong thuật toán (ví dụ: mảng rỗng, mảng có 1 phần tử, các phần tử trùng lặp, đầu vào đã được sắp xếp, đầu vào sắp xếp ngược, etc.).
+- Trường hợp "hiểm hóc" (Tricky/Malicious cases): Các test được thiết kế để thử thách tính đúng đắn của các thuật toán, có thể dẫn đến lỗi logic hoặc tràn số nếu không được xử lý cẩn thận.
+- Kích thước test: Tổng kích thước của mỗi file test case (input) không được vượt quá 1MB.
+- Mục tiêu: Tạo ra một bộ test case đa dạng và có tính thử thách cao để kiểm tra kỹ lưỡng các giải pháp cho bài toán.
+# Example implementation for a sorting problem
+from ...generate_test import GenerateTest
+import random
+
+class TICHTestGenerator(GenerateTest):
+    def get_argument_parser(self):
+        parser = super().get_argument_parser()
+        parser.add_argument("--min_n", type=int, default=2, help="Min n")
+        parser.add_argument("--max_n", type=int, default=2500, help="Max n for <1MB, brute force")
+        parser.add_argument("--min_val", type=int, default=1, help="Min value for a, b")
+        parser.add_argument("--max_val", type=int, default=100000, help="Max value for a, b")
+        return parser
+
+    def generate_inputs(self, params):
+        test_cases = []
+
+        # 1. Nhỏ nhất
+        test_cases.append("2\n1 2\n3 4")
+
+        # 2. Toàn 1
+        n = 4
+        test_cases.append(f"{n}\n{' '.join(['1']*n)}\n{' '.join(['1']*n)}")
+
+        # 3. Dãy tăng dần
+        n = 5
+        test_cases.append(f"{n}\n{' '.join(str(x) for x in range(1, n+1))}\n{' '.join(str(x) for x in range(1, n+1))}")
+
+        # 4. Dãy giảm dần
+        n = 5
+        test_cases.append(f"{n}\n{' '.join(str(x) for x in range(n, 0, -1))}\n{' '.join(str(x) for x in range(n, 0, -1))}")
+
+        # 5. Dãy xen kẽ max/min
+        n = 6
+        a = [1, 100000]*3
+        b = [100000, 1]*3
+        test_cases.append(f"{n}\n{' '.join(map(str, a))}\n{' '.join(map(str, b))}")
+
+        # 6. Test mẫu đề
+        test_cases.append("4\n9 7 1 4\n1 4 6 5")
+
+        # 7. Dãy ngẫu nhiên nhỏ (brute force)
+        n = 20
+        a = [random.randint(1, 100) for _ in range(n)]
+        b = [random.randint(1, 100) for _ in range(n)]
+        test_cases.append(f"{n}\n{' '.join(map(str, a))}\n{' '.join(map(str, b))}")
+
+        # 8. Dãy ngẫu nhiên lớn nhất dưới 1MB
+        n = min(getattr(params,"max_n",2500), 2500)
+        a = [random.randint(getattr(params,"min_val",1), getattr(params,"max_val",100000)) for _ in range(n)]
+        b = [random.randint(getattr(params,"min_val",1), getattr(params,"max_val",100000)) for _ in range(n)]
+        test_cases.append(f"{n}\n{' '.join(map(str, a))}\n{' '.join(map(str, b))}")
+
+        # 9. Dãy toàn max
+        n = 10
+        test_cases.append(f"{n}\n{' '.join(['100000']*n)}\n{' '.join(['100000']*n)}")
+
+        # 10. Dãy toàn min
+        n = 10
+        test_cases.append(f"{n}\n{' '.join(['1']*n)}\n{' '.join(['1']*n)}")
+
+        return test_cases
+
+3. Viết thuật tối ưu (Comment cách giải vào)
