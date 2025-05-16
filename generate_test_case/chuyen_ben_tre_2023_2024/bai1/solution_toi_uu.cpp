@@ -1,19 +1,20 @@
-#include <iostream>
+#include <bits/stdc++.h>
 using namespace std;
 
 int main() {
-    int a, b;
-    cin >> a >> b;
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
 
-    // Số chia hết cho 2 và 3 là bội của 6
-    int first = (a + 5) / 6 * 6;
-    int last = (b / 6) * 6;
-    if (first > b) {
-        cout << 0 << endl;
-        return 0;
+    int T;
+    cin >> T;
+    while(T--) {
+        long long N;
+        cin >> N;
+        long long multiplesOf3 = N / 3;
+        long long multiplesOf5 = N / 5;
+        long long multiplesOf15 = N / 15;
+        cout << (multiplesOf3 + multiplesOf5 - multiplesOf15) << "\n";
     }
-    int n = (last - first) / 6 + 1;
-    long long sum = 1LL * n * (first + last) / 2;
-    cout << sum << endl;
+
     return 0;
 }

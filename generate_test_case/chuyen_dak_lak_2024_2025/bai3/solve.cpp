@@ -1,123 +1,163 @@
-/*
-Giải thích thuật tối ưu:
-- N là số chữ số của P (rất lớn), S là tập các chữ số cấm (không có 0).
-- Xây dựng số lớn nhất <= P mà không chứa chữ số cấm, không có số 0 ở đầu.
-- Ý tưởng: Duyệt từng chữ số của P từ trái sang phải, tại mỗi vị trí cố gắng chọn số lớn nhất <= P[i] (nếu ở trạng thái còn "tight"), nhưng không thuộc S.
-- Nếu không chọn được, lùi lại vị trí trước, giảm đi 1 và chọn số lớn nhất không cấm, sau đó điền các số lớn nhất không cấm ở các vị trí tiếp theo.
-- Nếu không thể chọn được (cấm hết tất cả số), in -1.
-
-Độ phức tạp: O(N) với N là số chữ số của P.
-*/
-
-#include <iostream>
-#include <string>
-#include <set>
+#include <bits/stdc++.h>
 using namespace std;
 
-int main() {
+// Returns true if 'c' is disallowed (i.e., appears in the string S).
+bool isDisallowed(char c, const vector<bool>& disallowed) {
+    return disallowed[c - '0'];
+}
+
+int main(){
+    ios::sync_with_stdio(false);
+    cin.tie(NULL);
+
     string P, S;
     cin >> P >> S;
-    set<char> forbidden(S.begin(), S.end());
-    int N = P.size();
-    string res = "";
-    bool found = false;
 
-    // Precompute allowed digits (không cấm, không 0 ở đầu)
-    string allowed = "";
-    for (char d = '9'; d >= '0'; --d) {
-        if (!forbidden.count(d)) allowed += d;
+    // Mark digits that should not appear in the result.
+    // disallowed[d] = true means digit 'd' is forbidden.
+    vector<bool> disallowed(10, false);
+    for (char c : S) {
+        disallowed[c - '0'] = true;
     }
-    if (allowed.empty() || (allowed.size() == 1 && allowed[0] == '0')) {
-        cout << -1 << endl;
+
+    // We'll do a backtracking-like approach:
+    // - Try to match digits of P from left to right.
+    // - If the exact digit of P is not disallowed, place it and continue.
+    // - If we get stuck, we reduce a previously matched digit and fill the rest with max allowed digits.
+    // - If we cannot fix, answer is -1.
+
+    // Convert P to a vector of digits for convenience.
+    vector<int> digits(P.size());
+    for (int i = 0; i < (int)P.size(); i++) {
+        digits[i] = P[i] - '0';
+    }
+
+    // Attempt to construct the result in 'res'; start with -1 as sentinel.
+    vector<int> res(P.size(), -1);
+
+    // List of allowed digits in descending order (to fill from largest).
+    vector<int> allowed;
+    for (int d = 9; d >= 0; d--) {
+        if (!disallowed[d]) {
+            allowed.push_back(d);
+        }
+    }
+
+    // If no digits are allowed at all, answer is -1.
+    if (allowed.empty()) {
+        cout << -1 << "\n";
         return 0;
     }
 
-    // Greedy, backtrack khi cần
-    for (int i = 0; i < N; ++i) {
-        char best = -1;
-        // Nếu chưa từng "bẻ" nhỏ hơn P[i], cố chọn số lớn nhất <= P[i] (và không cấm)
-        // Nếu đã từng bẻ nhỏ rồi, chọn số lớn nhất không cấm (và không 0 ở đầu)
-        char start = (i == 0 ? '1' : '0');
-        for (char d = P[i]; d >= start; --d) {
-            if (!forbidden.count(d)) {
-                if (d < P[i]) {
-                    // Chọn d < P[i], sau đó điền các số lớn nhất không cấm
-                    res += d;
-                    for (int j = i+1; j < N; ++j) {
-                        for (char x = '9'; x >= '0'; --x)
-                            if (!forbidden.count(x)) {
-                                res += x;
-                                break;
-                            }
-                    }
-                    cout << res << endl;
-                    return 0;
+    // A helper function to fill the remaining positions with the largest possible allowed digits.
+    auto fillMax = [&](int startPos){
+        for (int i = startPos; i < (int)P.size(); i++) {
+            res[i] = allowed[0];
+        }
+    };
+
+    // We try to go digit by digit from left to right.
+    // 'less' indicates whether we've already placed a digit smaller than P at an earlier position,
+    // meaning we can freely fill the rest with largest allowed digits without worrying about P's constraint.
+    bool less = false;
+    for (int i = 0; i < (int)P.size(); i++) {
+        int currentP = digits[i];
+        bool placed = false;
+
+        // If we are already strictly less, just place the largest allowed digit.
+        if (less) {
+            // place largest
+            res[i] = allowed[0];
+            continue;
+        }
+
+        // If we are not strictly less yet, we must be careful to not exceed currentP.
+        // We'll try from currentP downward until we find an allowed digit.
+        for (int d = currentP; d >= 0; d--) {
+            if (!disallowed[d]) {
+                res[i] = d;
+                if (d < currentP) {
+                    // We are now strictly less than P's digit here
+                    less = true;
                 }
-                best = d;
+                placed = true;
                 break;
             }
         }
-        if (best == -1) {
-            // Không chọn được số nào ở vị trí này, phải lùi lại vị trí trước
-            int j = i-1;
+
+        if (!placed) {
+            // We couldn't place any digit at position i with the condition <= currentP.
+            // We need to backtrack to find a position that can be lowered.
+            int j = i - 1;
+            // Move left until we can reduce a digit.
             while (j >= 0) {
-                char cur = res[j];
-                char next_best = -1;
-                for (char d = cur-1; d >= (j == 0 ? '1' : '0'); --d) {
-                    if (!forbidden.count(d)) {
-                        next_best = d;
+                int oldVal = res[j];
+                // Attempt to find a smaller allowed digit than oldVal.
+                // We search from oldVal-1 down to 0.
+                bool found = false;
+                for (int d = oldVal - 1; d >= 0; d--) {
+                    if (!disallowed[d]) {
+                        res[j] = d;
+                        // Now fill the rest from j+1 to end with the largest allowed digits.
+                        fillMax(j + 1);
+                        found = true;
+                        less = true; // definitely less
                         break;
                     }
                 }
-                if (next_best != -1) {
-                    res = res.substr(0, j) + next_best;
-                    // Điền các số lớn nhất không cấm cho các vị trí sau
-                    for (int k = j+1; k < N; ++k) {
-                        for (char x = '9'; x >= '0'; --x)
-                            if (!forbidden.count(x)) {
-                                res += x;
-                                break;
-                            }
-                    }
-                    cout << res << endl;
-                    return 0;
-                }
-                j--;
-            }
-            cout << -1 << endl;
-            return 0;
-        }
-        res += best;
-    }
-    // Nếu tới đây, res là số cùng số chữ số với P, không nhỏ hơn P, cần kiểm tra <=P
-    if (res <= P) cout << res << endl;
-    else {
-        // Phải lùi lại để chọn số nhỏ hơn
-        int j = N-1;
-        while (j >= 0) {
-            char cur = res[j];
-            char next_best = -1;
-            for (char d = cur-1; d >= (j == 0 ? '1' : '0'); --d) {
-                if (!forbidden.count(d)) {
-                    next_best = d;
-                    break;
+                if (found) {
+                    break; // successfully backtracked
+                } else {
+                    // If we can't reduce res[j], set res[j] to -1 and keep going left
+                    res[j] = -1;
+                    j--;
                 }
             }
-            if (next_best != -1) {
-                res = res.substr(0, j) + next_best;
-                for (int k = j+1; k < N; ++k) {
-                    for (char x = '9'; x >= '0'; --x)
-                        if (!forbidden.count(x)) {
-                            res += x;
-                            break;
-                        }
-                }
-                cout << res << endl;
+
+            // If j < 0, we cannot backtrack.
+            if (j < 0) {
+                cout << -1 << "\n";
                 return 0;
             }
-            j--;
+            // If we backtracked successfully, done building.
+            break;
         }
-        cout << -1 << endl;
+    }
+
+    // If we've placed all digits or backtracked partially, we have a valid res.
+    // Remove leading zeros if they appear. If result is empty, means 0 -> which might violate
+    // the "positive integer" or if it has forbidden digits, also a problem. We'll check.
+    // Typically, if the result is valid, it shouldn't have leading zeros unless the number is zero.
+    int idx = 0;
+    while (idx < (int)res.size() && res[idx] == 0) idx++;
+
+    // If everything is zero, let's see if zero is allowed:
+    bool allZero = true;
+    for (int r : res) {
+        if (r != 0) { allZero = false; break; }
+    }
+    // If allZero and 0 is allowed, we still have a valid "0" if it doesn't exceed P, but we need a positive integer.
+    // The problem wants a positive integer, so a single '0' is not valid. We'll ignore that case, so -1 if all zero.
+    if (allZero) {
+        cout << -1 << "\n";
+        return 0;
+    }
+
+    // Build string from res (skipping leading zeros).
+    string ans;
+    for (int i = idx; i < (int)res.size(); i++) {
+        // If any digit is -1, that means the backtrack fix didn't fill properly -> -1.
+        if (res[i] < 0) {
+            cout << -1 << "\n";
+            return 0;
+        }
+        ans.push_back((char)(res[i] + '0'));
+    }
+    if (ans.empty()) {
+        // If the result is empty after trimming zeros -> -1
+        cout << -1 << "\n";
+    } else {
+        cout << ans << "\n";
     }
     return 0;
 }

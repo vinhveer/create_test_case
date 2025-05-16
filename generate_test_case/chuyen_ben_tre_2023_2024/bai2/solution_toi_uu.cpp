@@ -1,18 +1,33 @@
-#include <iostream>
+#include <bits/stdc++.h>
 using namespace std;
 
+bool isPrime(long long x) {
+    if (x < 2) return false;
+    if (x % 2 == 0) return (x == 2);
+    for (long long i = 3; i * i <= x; i += 2) {
+        if (x % i == 0) return false;
+    }
+    return true;
+}
+
 int main() {
-    unsigned int N;
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int N;
     cin >> N;
-    if (N == 0) {
-        cout << 0 << '\n';
-        return 0;
+    int countPrimeSolutions = 0;
+    while (N--) {
+        long long a, b;
+        cin >> a >> b;
+        // ax + b = 0 => x = -b / a
+        if (-b % a == 0) {
+            long long x = -b / a;
+            if (x > 0 && isPrime(x)) {
+                countPrimeSolutions++;
+            }
+        }
     }
-    string res;
-    while (N) {
-        res = char('0' + (N & 1)) + res;
-        N >>= 1;
-    }
-    cout << res << '\n';
+    cout << countPrimeSolutions << "\n";
     return 0;
 }

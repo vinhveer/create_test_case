@@ -14,6 +14,7 @@ Yêu cầu về test case:
 - Trường hợp "hiểm hóc" (Tricky/Malicious cases): Các test được thiết kế để thử thách tính đúng đắn của các thuật toán, có thể dẫn đến lỗi logic hoặc tràn số nếu không được xử lý cẩn thận.
 - Kích thước test: Tổng kích thước của mỗi file test case (input) không được vượt quá 1MB.
 - Mục tiêu: Tạo ra một bộ test case đa dạng và có tính thử thách cao để kiểm tra kỹ lưỡng các giải pháp cho bài toán.
+Lưu ý, không được viết thiếu hàm nào, và phải trên 10 test, phủ được tất cả các trường hợp có thể xảy ra, và phải đổi tên class cho đúng với đề bài nhé!
 # Example implementation for a sorting problem
 from ...generate_test import GenerateTest
 import random
