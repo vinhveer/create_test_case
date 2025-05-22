@@ -4,9 +4,6 @@ using namespace std;
 // Thuật trâu: Duyệt tất cả số chính phương <= max(a_i), kiểm tra có trong dãy không, cộng dồn nếu không có
 
 int main() {
-    freopen("SUMSOCP.INP", "r", stdin);
-    freopen("SUMSOCP.OUT", "w", stdout);
-
     int n;
     cin >> n;
     vector<long long> a(n);

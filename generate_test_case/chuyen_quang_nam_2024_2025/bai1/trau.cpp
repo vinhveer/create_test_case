@@ -13,9 +13,6 @@ vector<int> generate_fibo() {
 }
 
 int main() {
-    freopen("SUMFIBO.INP", "r", stdin);
-    freopen("SUMFIBO.OUT", "w", stdout);
-
     int N;
     cin >> N;
 

@@ -5,8 +5,6 @@ using namespace std;
 // Sau đó tìm từ dài nhất (sau đảo), in ra cùng vị trí xuất hiện
 
 int main() {
-    freopen("LONGWORD.INP", "r", stdin);
-    freopen("LONGWORD.OUT", "w", stdout);
     string S;
     getline(cin, S);
 
