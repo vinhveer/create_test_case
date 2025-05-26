@@ -1,44 +1,42 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <unordered_set>
 using namespace std;
 
-// Kiểm tra ký tự có phải dấu cách không
-bool isNotSpace(char c) {
-    return c != ' ';
-}
-
-// Kiểm tra xâu con từ vị trí [start, end] có chứa ký tự trùng lặp không
-bool hasNoDuplicates(const string& s, int start, int end) {
-    vector<bool> seen(256, false);  // Giả sử ASCII
-    for (int i = start; i <= end; i++) {
-        if (seen[s[i]]) {
-            return false;  // Có ký tự trùng lặp
+// Function to check if a substring has all unique characters and no spaces
+bool isValidPassword(const string& str) {
+    unordered_set<char> seen;
+    for (char c : str) {
+        if (c == ' ') {
+            return false; // Contains space
         }
-        seen[s[i]] = true;
+        if (seen.find(c) != seen.end()) {
+            return false; // Contains duplicate
+        }
+        seen.insert(c);
     }
     return true;
 }
 
-// Tìm xâu con không chứa ký tự trùng lặp, không có dấu cách, độ dài lớn nhất
-string findPassword(const string& s) {
-    int n = s.length();
-    int maxLength = 0;
+// Brute force function to find the longest valid password
+string findPassword(const string& line) {
     string password = "";
+    int maxLength = 0;
     
-    // Duyệt qua tất cả các xâu con có thể
-    for (int start = 0; start < n; start++) {
-        if (!isNotSpace(s[start])) continue;  // Bỏ qua nếu ký tự là dấu cách
-        
-        for (int end = start; end < n; end++) {
-            if (!isNotSpace(s[end])) break;  // Dừng nếu gặp dấu cách
+    // Check all possible substrings
+    for (int i = 0; i < line.length(); i++) {
+        for (int j = i; j < line.length(); j++) {
+            string substr = line.substr(i, j - i + 1);
             
-            // Kiểm tra xem xâu con từ start đến end có thỏa mãn không
-            if (hasNoDuplicates(s, start, end)) {
-                int length = end - start + 1;
-                
-                // Nếu độ dài lớn hơn hoặc bằng maxLength, cập nhật password
-                if (length >= maxLength) {
-                    maxLength = length;
-                    password = s.substr(start, length);
+            // Check if valid and longer than current max
+            if (isValidPassword(substr)) {
+                if (substr.length() > maxLength) {
+                    maxLength = substr.length();
+                    password = substr;
+                } else if (substr.length() == maxLength) {
+                    // If same length, update to the later one
+                    password = substr;
                 }
             }
         }
@@ -48,19 +46,14 @@ string findPassword(const string& s) {
 }
 
 int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-    
     int n;
     cin >> n;
-    cin.ignore();  // Bỏ qua ký tự xuống dòng sau khi đọc n
+    cin.ignore(); // Clear the newline
     
-    while (n--) {
+    for (int i = 0; i < n; i++) {
         string line;
         getline(cin, line);
-        
-        string password = findPassword(line);
-        cout << password << endl;
+        cout << findPassword(line) << endl;
     }
     
     return 0;

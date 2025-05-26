@@ -2,286 +2,350 @@ from ...generate_test import GenerateTest
 import random
 import string
 
-class PasswordTestGenerator(GenerateTest):
+class PASSWORDTestGenerator(GenerateTest):
     def get_argument_parser(self):
         parser = super().get_argument_parser()
         parser.add_argument("--min_n", type=int, default=1, help="Min number of lines")
         parser.add_argument("--max_n", type=int, default=20000, help="Max number of lines")
-        parser.add_argument("--min_line_length", type=int, default=1, help="Min length of each line")
-        parser.add_argument("--max_line_length", type=int, default=256, help="Max length of each line")
+        parser.add_argument("--min_len", type=int, default=1, help="Min length of each line")
+        parser.add_argument("--max_len", type=int, default=256, help="Max length of each line")
         return parser
-
-    def generate_test_cases(self, params):
-        """Override the parent method to ensure all test cases are used"""
-        inputs = self.generate_inputs(params)
-        test_cases = []
-        for i, input_str in enumerate(inputs):
-            test_cases.append({
-                'id': i + 1,
-                'input': input_str
-            })
-        return test_cases
-        
-    def generate_random_string(self, length, with_spaces=True, with_duplicates=True):
-        """Generate a random string with specified properties"""
-        chars = string.ascii_letters + string.digits + "!@#$%^&*()_+-=[]{}|;:,.<>?/"
-        if with_spaces:
-            chars += " "
-            
-        if with_duplicates:
-            return ''.join(random.choice(chars) for _ in range(length))
-        else:
-            # If no duplicates allowed, ensure length doesn't exceed available chars
-            max_possible = len(chars)
-            actual_length = min(length, max_possible)
-            return ''.join(random.sample(chars, actual_length))
-            
-    def generate_line_with_password(self, line_length, password_length, password_position="random"):
-        """Generate a line with a hidden password of specified length"""
-        # Generate a password (all unique chars, no spaces)
-        password = self.generate_random_string(password_length, with_spaces=False, with_duplicates=False)
-        
-        # Calculate remaining length
-        remaining_length = line_length - password_length
-        
-        if remaining_length <= 0:
-            return password
-            
-        # Decide password position
-        if password_position == "start":
-            prefix_length = 0
-            suffix_length = remaining_length
-        elif password_position == "end":
-            prefix_length = remaining_length
-            suffix_length = 0
-        else:  # random
-            prefix_length = random.randint(0, remaining_length)
-            suffix_length = remaining_length - prefix_length
-            
-        # Generate prefix and suffix
-        prefix = self.generate_random_string(prefix_length) if prefix_length > 0 else ""
-        suffix = self.generate_random_string(suffix_length) if suffix_length > 0 else ""
-        
-        return prefix + password + suffix
-        
-    def generate_line_with_multiple_passwords(self, line_length, min_length=3, max_length=10, count=2):
-        """Generate a line with multiple potential passwords of varying lengths"""
-        passwords = []
-        total_length = 0
-        
-        # Generate passwords with increasing lengths
-        for i in range(count):
-            if i == count - 1:  # Last password should be longest
-                pwd_length = max_length
-            else:
-                pwd_length = random.randint(min_length, max_length-1)
-                
-            password = self.generate_random_string(pwd_length, with_spaces=False, with_duplicates=False)
-            passwords.append(password)
-            total_length += pwd_length
-            
-        # Calculate remaining length
-        remaining_length = line_length - total_length
-        
-        if remaining_length < count - 1:  # Need at least count-1 separators
-            # Just return the last password if we can't fit everything
-            return passwords[-1]
-            
-        # Create separators (random strings with spaces)
-        separators = []
-        for i in range(count - 1):
-            if i == count - 2:  # Last separator gets all remaining space
-                sep_length = remaining_length - sum(len(s) for s in separators)
-            else:
-                sep_length = random.randint(1, remaining_length // (count - i))
-                remaining_length -= sep_length
-                
-            separator = self.generate_random_string(sep_length)
-            separators.append(separator)
-            
-        # Interleave passwords and separators
-        result = ""
-        for i in range(count - 1):
-            result += passwords[i] + separators[i]
-        result += passwords[-1]
-        
-        return result
 
     def generate_inputs(self, params):
         test_cases = []
         
-        # Sample test from the problem statement
+        # Common characters to use in test generation
+        all_chars = string.ascii_letters + string.digits + string.punctuation + " "
+        letters_only = string.ascii_letters
+        alphanumeric = string.ascii_letters + string.digits
+        special_chars = string.punctuation
+        
+        # 1. Sample from the problem statement
         test_cases.append("3\nGood morning!\nHow are you?\nHave a nice day!")
         
-        # ===== Subtask 1: 1 <= n <= 10^4 (50% of tests) =====
+        # 2. Minimum valid case (n=1, short string)
+        test_cases.append("1\nHello")
         
-        # Edge case: n = 1
-        test_cases.append("1\nHello World!")
+        # 3. Case with multiple candidates of the same max length
+        test_cases.append("1\nabcde uvwxy 12345")
         
-        # Edge case: Empty line
-        test_cases.append("1\n ")
+        # 4. Edge case: Maximum password length equals line length
+        unique_letters = "abcdefghijklmnopqrstuvwxyz"
+        test_cases.append(f"1\n{unique_letters}")
         
-        # Edge case: Single character
-        test_cases.append("2\na\nz")
+        # PERFORMANCE STRESS TESTS - designed to make brute force TLE
         
-        # Edge case: Line with only spaces
-        test_cases.append("1\n      ")
-        
-        # Special case: All characters unique
-        test_cases.append("1\nabcdefghijklmnopqrstuvwxyz")
-        
-        # Special case: All characters duplicated
-        test_cases.append("1\naabbccddeeffgghhiijjkkllmm")
-        
-        # Special case: Line with spaces between each character
-        test_cases.append("1\na b c d e f g h i j k")
-        
-        # Tricky case: Multiple valid passwords of same length
-        test_cases.append("2\nabc def ghi\njkl mno pqr")
-        
-        # Small test with multiple lines
-        small_test = ["5"]
-        for _ in range(5):
-            line_length = random.randint(10, 30)
-            pwd_length = random.randint(3, 8)
-            line = self.generate_line_with_password(line_length, pwd_length)
-            small_test.append(line)
-        test_cases.append("\n".join(small_test))
-        
-        # Medium test with n = 100
-        medium_test = ["100"]
-        for _ in range(100):
-            line_length = random.randint(20, 100)
-            pwd_length = random.randint(5, 15)
-            line = self.generate_line_with_password(line_length, pwd_length)
-            medium_test.append(line)
-        test_cases.append("\n".join(medium_test))
-        
-        # Large test with n = 1000
-        large_test_1 = ["1000"]
-        for _ in range(1000):
-            line_length = random.randint(50, 150)
-            pwd_length = random.randint(10, 20)
-            line = self.generate_line_with_password(line_length, pwd_length)
-            large_test_1.append(line)
-        test_cases.append("\n".join(large_test_1))
-        
-        # Large test with n = 10000
-        large_test_2 = ["10000"]
-        for _ in range(10000):
-            line_length = random.randint(20, 50)  # Shorter lines to keep file size reasonable
-            pwd_length = random.randint(5, 10)
-            line = self.generate_line_with_multiple_passwords(line_length, min_length=3, max_length=pwd_length, count=2)
-            large_test_2.append(line)
-        test_cases.append("\n".join(large_test_2))
-        
-        # ===== Subtask 2: 10^4 < n <= 1.5*10^4 (30% of tests) =====
-        
-        # Test with n = 12000
-        large_test_3 = ["12000"]
-        for _ in range(12000):
-            line_length = random.randint(15, 40)  # Keep lines shorter for larger n
-            pwd_length = random.randint(5, 10)
-            line = self.generate_line_with_password(line_length, pwd_length)
-            large_test_3.append(line)
-        test_cases.append("\n".join(large_test_3))
-        
-        # Test with n = 15000
-        large_test_4 = ["15000"]
-        for _ in range(15000):
-            line_length = random.randint(10, 30)
-            pwd_length = random.randint(3, 8)
-            line = self.generate_line_with_password(line_length, pwd_length)
-            large_test_4.append(line)
-        test_cases.append("\n".join(large_test_4))
-        
-        # ===== Subtask 3: 1.5*10^4 < n <= 2*10^4 (20% of tests) =====
-        
-        # Test with n = 17500
-        large_test_5 = ["17500"]
-        for _ in range(17500):
-            line_length = random.randint(10, 25)
-            pwd_length = random.randint(3, 7)
-            line = self.generate_line_with_password(line_length, pwd_length)
-            large_test_5.append(line)
-        test_cases.append("\n".join(large_test_5))
-        
-        # Test with n = 20000 (maximum)
-        large_test_6 = ["20000"]
-        for _ in range(20000):
-            line_length = random.randint(5, 20)  # Smallest lines for largest n
-            pwd_length = random.randint(2, 5)
-            line = self.generate_line_with_password(line_length, pwd_length)
-            large_test_6.append(line)
-        test_cases.append("\n".join(large_test_6))
-        
-        # ===== Additional Test Cases =====
-        
-        # Case with max line length (256)
-        max_line_test = ["10"]
-        for _ in range(10):
-            pwd_length = random.randint(20, 50)
-            line = self.generate_line_with_password(256, pwd_length)
-            max_line_test.append(line)
-        test_cases.append("\n".join(max_line_test))
-        
-        # Case with special characters
-        special_char_test = ["5"]
-        for _ in range(5):
-            line = "".join(random.choice(string.punctuation) for _ in range(30))
-            special_char_test.append(line)
-        test_cases.append("\n".join(special_char_test))
-        
-        # Case with long passwords at the end
-        long_pwd_test = ["5"]
-        for _ in range(5):
-            line = self.generate_line_with_multiple_passwords(100, min_length=10, max_length=20, count=3)
-            long_pwd_test.append(line)
-        test_cases.append("\n".join(long_pwd_test))
-        
-        # Case with many spaces
-        space_test = ["5"]
-        for _ in range(5):
-            spaces = "".join([" " for _ in range(random.randint(10, 30))])
-            pwd = self.generate_random_string(random.randint(5, 15), with_spaces=False, with_duplicates=False)
-            more_spaces = "".join([" " for _ in range(random.randint(10, 30))])
-            line = spaces + pwd + more_spaces
-            space_test.append(line)
-        test_cases.append("\n".join(space_test))
-        
-        # Malicious case: Worst-case for brute force algorithm (many potential passwords)
-        malicious_test = ["20"]
-        for i in range(20):
-            # Create a string with many potential passwords of increasing length
+        # 5. Test with many nearly maximum-length lines
+        # This will force the brute force to check O(n²) substrings for each line
+        n = 100
+        lines = []
+        for _ in range(n):
+            # Create string with length 250-256 with many unique character sequences
+            line_length = random.randint(250, 256)
+            
+            # Generate a line with many different characters to create many candidate passwords
             line = ""
-            for j in range(1, 10):  # Create passwords of length 1 to 9
-                pwd = self.generate_random_string(j, with_spaces=False, with_duplicates=False)
-                line += pwd + " "
-            # Add longest password at end
-            line += self.generate_random_string(10, with_spaces=False, with_duplicates=False)
-            malicious_test.append(line)
-        test_cases.append("\n".join(malicious_test))
+            for i in range(line_length):
+                # Every few characters, start a new potential password segment
+                if i % 5 == 0:
+                    line += random.choice(alphanumeric)
+                else:
+                    # Mix in some repeats and spaces to create boundaries
+                    if random.random() < 0.2:
+                        line += " "
+                    else:
+                        line += random.choice(alphanumeric + special_chars)
+            
+            lines.append(line)
+        test_cases.append(f"{n}\n" + "\n".join(lines))
         
-        # Mix of various test patterns
-        mixed_test = ["30"]
-        for i in range(30):
-            if i % 5 == 0:
-                # Line with many spaces
-                line = " ".join(self.generate_random_string(1, with_spaces=False) for _ in range(20))
-            elif i % 5 == 1:
-                # Line with long unique substring
-                line = self.generate_random_string(30, with_spaces=True) + self.generate_random_string(20, with_spaces=False, with_duplicates=False)
-            elif i % 5 == 2:
-                # Line with multiple potential passwords
-                line = self.generate_line_with_multiple_passwords(50, count=4)
-            elif i % 5 == 3:
-                # Line with no spaces
-                line = self.generate_random_string(40, with_spaces=False)
-            else:
-                # Normal line
-                line = self.generate_line_with_password(40, 10)
-            mixed_test.append(line)
-        test_cases.append("\n".join(mixed_test))
+        # 6. Worst case for brute force: Almost all unique characters, very long lines
+        n = 50
+        lines = []
+        for _ in range(n):
+            line_length = 256  # Maximum length
+            
+            # Create a string with many unique character sequences separated by occasional spaces
+            chars = list(alphanumeric + special_chars)
+            random.shuffle(chars)
+            
+            line = ""
+            for i in range(line_length):
+                if i % 20 == 19:  # Add occasional space
+                    line += " "
+                else:
+                    if chars:
+                        line += chars.pop()  # Use each character only once when possible
+                    else:
+                        # If we run out, use random characters
+                        line += random.choice(alphanumeric + special_chars)
+            
+            lines.append(line)
+        test_cases.append(f"{n}\n" + "\n".join(lines))
         
-        # Ensure we have more than 30 test cases
+        # 7. Test with maximum n and medium-length strings (balancing total size)
+        n = 20000
+        lines = []
+        for _ in range(n):
+            line_length = random.randint(30, 50)  # Medium-length lines
+            
+            # Create strings with multiple candidate passwords
+            chars = list(alphanumeric + special_chars)
+            random.shuffle(chars)
+            
+            # Create a pattern with potential password candidates
+            segments = []
+            remaining_length = line_length
+            
+            while remaining_length > 0:
+                # Create segments of 5-10 unique characters
+                segment_length = min(remaining_length, random.randint(5, 10))
+                segment = ''.join(random.sample(alphanumeric, segment_length))
+                segments.append(segment)
+                
+                remaining_length -= segment_length
+                
+                # Add a space between segments if there's room
+                if remaining_length > 0:
+                    segments.append(" ")
+                    remaining_length -= 1
+            
+            line = ''.join(segments)
+            lines.append(line)
+        test_cases.append(f"{n}\n" + "\n".join(lines))
+        
+        # 8. Test with extremely pathological case for brute force
+        # Create maximum length strings with almost all unique characters
+        n = 200  # 200 lines of max length should be enough to make brute force time out
+        lines = []
+        for _ in range(n):
+            # Create a base of unique characters
+            unique_chars = list(set(alphanumeric + special_chars.replace(' ', '')))
+            random.shuffle(unique_chars)
+            
+            # Create a string where first 80% are unique characters
+            unique_segment_length = min(200, len(unique_chars))
+            unique_segment = ''.join(unique_chars[:unique_segment_length])
+            
+            # Fill the rest with random characters and occasional spaces
+            remaining_length = 256 - unique_segment_length
+            filler = ''.join(random.choice(alphanumeric + " ") for _ in range(remaining_length))
+            
+            line = unique_segment + filler
+            lines.append(line)
+        test_cases.append(f"{n}\n" + "\n".join(lines))
+        
+        # 9. Test specifically targeting the sliding window efficiency
+        # Create strings with a maximum valid substring near the end
+        n = 1000
+        lines = []
+        for _ in range(n):
+            line_length = 256
+            
+            # First part is full of duplicates and spaces
+            first_part_length = 200
+            first_part = ''.join(random.choice("abcde ") for _ in range(first_part_length))
+            
+            # Last part has a long sequence of unique characters
+            last_part_length = line_length - first_part_length
+            unique_chars = list(set(alphanumeric + special_chars.replace(' ', '')))
+            random.shuffle(unique_chars)
+            last_part = ''.join(unique_chars[:last_part_length])
+            
+            line = first_part + last_part
+            lines.append(line)
+        test_cases.append(f"{n}\n" + "\n".join(lines))
+        
+        # 10. Test with a mixture of very long and very short lines
+        n = 10000
+        lines = []
+        for i in range(n):
+            if i % 10 == 0:  # Every 10th line is very long
+                line_length = 256
+                # Create a string with many unique character segments
+                segments = []
+                remaining_length = line_length
+                
+                while remaining_length > 0:
+                    # Create segments of 10-20 unique characters
+                    segment_length = min(remaining_length, random.randint(10, 20))
+                    segment = ''.join(random.sample(alphanumeric, segment_length))
+                    segments.append(segment)
+                    
+                    remaining_length -= segment_length
+                    
+                    # Add a space between segments if there's room
+                    if remaining_length > 0:
+                        segments.append(" ")
+                        remaining_length -= 1
+                
+                line = ''.join(segments)
+            else:  # Other lines are short
+                line_length = random.randint(5, 20)
+                line = ''.join(random.choice(all_chars) for _ in range(line_length))
+            
+            lines.append(line)
+        test_cases.append(f"{n}\n" + "\n".join(lines))
+        
+        # 11. Test with maximum n and long strings
+        # This is designed to maximize the total workload
+        n = 5000  # Smaller n to keep total size reasonable
+        lines = []
+        for _ in range(n):
+            line_length = random.randint(200, 256)  # Long lines
+            
+            # Create strings with a mixture of unique segments and spaces
+            segments = []
+            remaining_length = line_length
+            
+            while remaining_length > 0:
+                # Create segments of varying length with unique characters
+                segment_length = min(remaining_length, random.randint(5, 30))
+                segment = ''.join(random.sample(alphanumeric + special_chars, segment_length))
+                segments.append(segment)
+                
+                remaining_length -= segment_length
+                
+                # Add a space between segments if there's room
+                if remaining_length > 0:
+                    segments.append(" ")
+                    remaining_length -= 1
+            
+            line = ''.join(segments)
+            lines.append(line)
+        test_cases.append(f"{n}\n" + "\n".join(lines))
+        
+        # 12. Ultra-pathological case: maximize substring checks
+        # For a length-n string, there are n(n+1)/2 possible substrings
+        # Create strings where many of these substrings have unique characters
+        n = 100
+        lines = []
+        for _ in range(n):
+            line_length = 256
+            
+            # Use characters with high probability of being unique when combined
+            available_chars = list(alphanumeric + special_chars.replace(' ', ''))
+            random.shuffle(available_chars)
+            
+            # Try to use as many unique characters as possible
+            line = ''.join(available_chars[:line_length])
+            
+            # Insert a few spaces to create challenging boundaries
+            for _ in range(5):
+                pos = random.randint(0, line_length - 1)
+                line = line[:pos] + ' ' + line[pos+1:]
+            
+            lines.append(line)
+        test_cases.append(f"{n}\n" + "\n".join(lines))
+        
+        # 13-20. More challenging tests with decreasing string length
+        for length_factor in range(8, 0, -1):
+            n = 1000
+            max_str_length = 30 * length_factor
+            
+            lines = []
+            for _ in range(n):
+                line_length = random.randint(max_str_length - 10, max_str_length)
+                
+                # Create a string with multiple potential password candidates
+                line = ""
+                pos = 0
+                
+                while pos < line_length:
+                    # Add a segment of unique characters
+                    segment_length = min(line_length - pos, random.randint(3, 15))
+                    segment = ''.join(random.sample(alphanumeric + special_chars, segment_length))
+                    line += segment
+                    pos += segment_length
+                    
+                    # Add a space if there's room
+                    if pos < line_length:
+                        line += " "
+                        pos += 1
+                
+                lines.append(line)
+            
+            test_cases.append(f"{n}\n" + "\n".join(lines))
+        
+        # 21-30. Tests with varying n values to cover all subtasks
+        for n_factor in range(10):
+            # Calculate n to cover all subtasks
+            if n_factor < 5:  # First 5 tests in subtask 1
+                n = 1000 + 1800 * n_factor  # 1000 to 10000
+            elif n_factor < 8:  # Next 3 tests in subtask 2
+                n = 10001 + 1666 * (n_factor - 5)  # 10001 to 15000
+            else:  # Last 2 tests in subtask 3
+                n = 15001 + 2500 * (n_factor - 8)  # 15001 to 20000
+            
+            # Keep string length reasonable to fit file size limits
+            max_str_length = 50 - (n // 1000)  # Reduce string length as n increases
+            
+            lines = []
+            for _ in range(n):
+                line_length = random.randint(10, max_str_length)
+                
+                # Create a string with challenging password patterns
+                line = ""
+                pos = 0
+                
+                while pos < line_length:
+                    if random.random() < 0.7:  # 70% chance for a potential password segment
+                        segment_length = min(line_length - pos, random.randint(3, 10))
+                        segment = ''.join(random.sample(alphanumeric, segment_length))
+                        line += segment
+                        pos += segment_length
+                    else:  # 30% chance for a non-password segment (duplicates or spaces)
+                        segment_length = min(line_length - pos, random.randint(1, 5))
+                        segment = ''.join(random.choice(" " + alphanumeric[:5]) for _ in range(segment_length))
+                        line += segment
+                        pos += segment_length
+                
+                lines.append(line)
+            
+            test_cases.append(f"{n}\n" + "\n".join(lines))
+        
+        # 31. Extreme case: Maximum n with each line containing many unique substrings
+        n = 20000
+        lines = []
+        for _ in range(n):
+            line_length = random.randint(20, 30)  # Keep length moderate to fit file size
+            
+            # Create a line with many potential password candidates
+            chars = list(alphanumeric)
+            random.shuffle(chars)
+            
+            # Use as many unique characters as possible
+            line = ''.join(chars[:line_length])
+            
+            # Insert a couple of spaces to create boundaries
+            for _ in range(2):
+                if line_length > 2:  # Ensure we have enough characters
+                    pos = random.randint(0, line_length - 1)
+                    line = line[:pos] + ' ' + line[pos+1:]
+            
+            lines.append(line)
+        test_cases.append(f"{n}\n" + "\n".join(lines))
+        
+        # 32-35. Final stress tests with varying patterns
+        # Fixed the pattern functions to properly create strings
+        pattern_functions = [
+            # Pattern 1: Many small unique segments
+            lambda: ''.join(''.join(random.sample(alphanumeric, 3)) + ' ' for _ in range(10)),
+            
+            # Pattern 2: A few larger unique segments
+            lambda: ' '.join(''.join(random.sample(alphanumeric, 15)) for _ in range(3)),
+            
+            # Pattern 3: Alternating unique and duplicate segments
+            lambda: ''.join(''.join(random.sample(alphanumeric, 5)) + ' ' + 'a' * 5 + ' ' for _ in range(5)),
+            
+            # Pattern 4: One long unique segment with spaces on both sides
+            lambda: ' ' * 10 + ''.join(random.sample(alphanumeric + special_chars, 30)) + ' ' * 10
+        ]
+        
+        for pattern_idx in range(4):
+            pattern_fn = pattern_functions[pattern_idx]
+            n = 5000
+            lines = [pattern_fn() for _ in range(n)]
+            test_cases.append(f"{n}\n" + "\n".join(lines))
+        
         return test_cases

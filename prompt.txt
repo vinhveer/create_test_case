@@ -15,6 +15,9 @@ Yêu cầu về test case:
 - Kích thước test: Tổng kích thước của mỗi file test case (input) không được vượt quá 50KB.
 - Mục tiêu: Tạo ra một bộ test case đa dạng và có tính thử thách cao để kiểm tra kỹ lưỡng các giải pháp cho bài toán.
 Lưu ý, không được viết thiếu hàm nào, và phải trên 30 test, phủ được tất cả các trường hợp có thể xảy ra, và phải đổi tên class cho đúng với đề bài nhé!
+ yêu cầu thêm là sinh ra test mà nếu làm trâu không tối ưu thì sẽ TLE
+Time limit:1.0s
+Memory limit:1G
 # Example implementation for a sorting problem
 from ...generate_test import GenerateTest
 import random
@@ -76,5 +79,4 @@ class TICHTestGenerator(GenerateTest):
         test_cases.append(f"{n}\n{' '.join(['1']*n)}\n{' '.join(['1']*n)}")
 
         return test_cases
-
-3. Viết thuật tối ưu (Comment cách giải vào)
+và class sinh test sẽ hoạt động dựa vào logic của file solve.cpp để sinh ra test vì file solve đã là thuật chuẩn rồi và lưu ý số lượng test sinh ra phải đạt đúng chính xác  tuyệt đối phần trăm subtask mà đề bài đưa ta
